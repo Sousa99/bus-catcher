@@ -17,9 +17,17 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "dotenv": "^16.4.0"
+    "@hono/node-server": "^2.1.1",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^16.4.0",
+    "drizzle-orm": "^0.45.3",
+    "hono": "^4.13.8",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.2",
     "esbuild": "^0.28.2",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
