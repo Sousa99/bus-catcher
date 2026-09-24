@@ -3,11 +3,21 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import * as schema from '../db/schema';
+import { createCarrisProvider } from '../providers/carris';
+import type { ScheduleProvider } from '../providers/types';
+import { createConfigService, type ConfigService } from '../services/config';
 
 export type TestDb = {
   sqlite: Database.Database;
   db: BetterSQLite3Database<typeof schema>;
 };
+
+export interface TestBackend {
+  sqlite: Database.Database;
+  db: TestDb['db'];
+  provider: ScheduleProvider;
+  config: ConfigService;
+}
 
 export function createTestDb(): TestDb {
   const sqlite = new Database(':memory:');
@@ -15,6 +25,16 @@ export function createTestDb(): TestDb {
   const migrationsFolder = new URL('../../drizzle', import.meta.url).pathname;
   migrate(db, { migrationsFolder });
   return { sqlite, db };
+}
+
+export function createTestBackend(): TestBackend {
+  const { sqlite, db } = createTestDb();
+  return {
+    sqlite,
+    db,
+    provider: createCarrisProvider(db),
+    config: createConfigService(db),
+  };
 }
 
 export function seedTestFeed({ db }: TestDb): void {

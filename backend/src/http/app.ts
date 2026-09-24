@@ -1,7 +1,17 @@
 import { Hono } from 'hono';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
+import { createConfigStopBodySchema, searchStopsQuerySchema } from '../lib/schemas';
+import type { ConfigService } from '../services/config';
+import type { ScheduleProvider } from '../providers/types';
 
-export function createApp(): Hono {
+export interface AppDeps {
+  provider: ScheduleProvider;
+  config: ConfigService;
+}
+
+export function createApp(deps: AppDeps): Hono {
   const app = new Hono();
 
   app.onError((err, c) => {
@@ -14,6 +24,55 @@ export function createApp(): Hono {
   app.notFound((c) => c.json({ error: 'not_found' }, 404));
 
   app.get('/api/health', (c) => c.json({ ok: true, service: 'bus-catcher' }));
+
+  app.get('/api/lines', async (c) => {
+    const lines = await deps.provider.listLines();
+    return c.json({ lines });
+  });
+
+  app.get('/api/stops', async (c) => {
+    const parsed = searchStopsQuerySchema.safeParse({
+      q: c.req.query('q'),
+      limit: c.req.query('limit') ?? undefined,
+    });
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_query', detail: parsed.error.issues }, 400);
+    }
+    const stops = await deps.provider.searchStops(parsed.data.q, parsed.data.limit);
+    return c.json({ stops });
+  });
+
+  app.get('/api/stops/:id', async (c) => {
+    const stop = await deps.provider.getStop(c.req.param('id'));
+    if (!stop) return c.json({ error: 'not_found' }, 404);
+    return c.json({ stop });
+  });
+
+  app.get('/api/config', (c) => {
+    return c.json({ stops: deps.config.listConfig() });
+  });
+
+  app.post('/api/config/stops', async (c) => {
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: 'invalid_body' }, 400);
+    }
+    const parsed = createConfigStopBodySchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_body', detail: parsed.error.issues }, 400);
+    }
+    try {
+      const stop = deps.config.addConfigStop(parsed.data);
+      return c.json({ stop }, 201);
+    } catch (err) {
+      if (err instanceof AppError) {
+        return c.json({ error: err.code, detail: err.detail }, err.status as ContentfulStatusCode);
+      }
+      throw err;
+    }
+  });
 
   return app;
 }

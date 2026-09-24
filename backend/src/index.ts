@@ -1,5 +1,5 @@
+import { createBackend } from './compose';
 import { config } from './config';
-import { migrateDb } from './db/migrate';
 import { startHttpServer } from './http/server';
 import { logger } from './lib/logger';
 import { startMcpServer } from './mcp';
@@ -11,10 +11,10 @@ logger.info('bus-catcher backend starting', {
   serverName: config.serverName,
 });
 
-migrateDb();
+const backend = createBackend(config.dbPath);
 
 if (mode === 'http') {
-  startHttpServer();
+  startHttpServer(backend);
 } else {
-  startMcpServer();
+  startMcpServer(backend);
 }

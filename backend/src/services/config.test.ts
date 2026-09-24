@@ -1,0 +1,102 @@
+import { describe, expect, it } from 'vitest';
+import { createTestBackend, seedTestFeed } from '../test-utils/db';
+import { AppError } from '../lib/errors';
+
+function setup() {
+  const backend = createTestBackend();
+  seedTestFeed(backend);
+  return backend;
+}
+
+function expectAppError(fn: () => unknown, status: number, code: string): void {
+  try {
+    fn();
+    expect.unreachable('expected an AppError to be thrown');
+  } catch (err) {
+    expect(err).toBeInstanceOf(AppError);
+    const appError = err as AppError;
+    expect(appError.status).toBe(status);
+    expect(appError.code).toBe(code);
+  }
+}
+
+describe('config service', () => {
+  it('lists an empty config initially', () => {
+    const backend = setup();
+    expect(backend.config.listConfig()).toEqual([]);
+  });
+
+  it('adds a configured stop with defaults', () => {
+    const backend = setup();
+    const stop = backend.config.addConfigStop({ stopId: 'S1' });
+    expect(stop.stop.id).toBe('S1');
+    expect(stop.stop.name).toBe('Av. Teste');
+    expect(stop.lineFilter).toEqual([]);
+    expect(stop.enabled).toBe(true);
+    expect(stop.displayOrder).toBe(0);
+  });
+
+  it('rejects an unknown stop', () => {
+    const backend = setup();
+    expectAppError(() => backend.config.addConfigStop({ stopId: 'NOPE' }), 400, 'unknown_stop');
+  });
+
+  it('rejects unknown lines in the filter', () => {
+    const backend = setup();
+    expectAppError(
+      () => backend.config.addConfigStop({ stopId: 'S1', lineFilter: ['999'] }),
+      400,
+      'unknown_line',
+    );
+  });
+
+  it('rejects a duplicate stop', () => {
+    const backend = setup();
+    backend.config.addConfigStop({ stopId: 'S1' });
+    expectAppError(() => backend.config.addConfigStop({ stopId: 'S1' }), 409, 'duplicate_stop');
+  });
+
+  it('assigns sequential display order', () => {
+    const backend = setup();
+    const first = backend.config.addConfigStop({ stopId: 'S1' });
+    const second = backend.config.addConfigStop({ stopId: 'S2' });
+    expect(first.displayOrder).toBe(0);
+    expect(second.displayOrder).toBe(1);
+  });
+
+  it('stores the line filter', () => {
+    const backend = setup();
+    const stop = backend.config.addConfigStop({
+      stopId: 'S1',
+      lineFilter: ['736'],
+    });
+    expect(stop.lineFilter).toEqual(['736']);
+  });
+
+  it('updates a configured stop', () => {
+    const backend = setup();
+    const added = backend.config.addConfigStop({ stopId: 'S1' });
+    const updated = backend.config.updateConfigStop(added.id, {
+      enabled: false,
+      lineFilter: ['706'],
+    });
+    expect(updated.enabled).toBe(false);
+    expect(updated.lineFilter).toEqual(['706']);
+  });
+
+  it('throws 404 when updating an unknown config id', () => {
+    const backend = setup();
+    expectAppError(
+      () => backend.config.updateConfigStop(999, { enabled: false }),
+      404,
+      'not_found',
+    );
+  });
+
+  it('removes a configured stop', () => {
+    const backend = setup();
+    const added = backend.config.addConfigStop({ stopId: 'S1' });
+    backend.config.removeConfigStop(added.id);
+    expect(backend.config.listConfig()).toEqual([]);
+  });
+});

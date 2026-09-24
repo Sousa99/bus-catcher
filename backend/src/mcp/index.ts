@@ -3,13 +3,109 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { config } from '../config';
+import type { BackendDeps } from '../compose';
+import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
+import { createConfigStopBodySchema } from '../lib/schemas';
+import { z } from 'zod';
 
-export function startMcpServer(): void {
+type TextContent = { type: 'text'; text: string };
+
+function ok(value: unknown): { content: TextContent[] } {
+  return { content: [{ type: 'text', text: JSON.stringify(value) }] };
+}
+
+function fail(err: unknown): { isError: true; content: TextContent[] } {
+  const appError = err instanceof AppError ? err : null;
+  return {
+    isError: true,
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify({
+          error: appError?.code ?? 'internal_error',
+          detail: appError?.detail ?? undefined,
+        }),
+      },
+    ],
+  };
+}
+
+export function startMcpServer(deps: BackendDeps): void {
   const server = new McpServer({
     name: config.serverName,
     version: '0.1.0',
   });
+
+  server.registerTool(
+    'list_lines',
+    {
+      title: 'List bus lines',
+      description: 'List all bus lines in the ingested network.',
+      inputSchema: {},
+    },
+    async () => {
+      const lines = await deps.provider.listLines();
+      return ok({ lines });
+    },
+  );
+
+  server.registerTool(
+    'search_stops',
+    {
+      title: 'Search bus stops',
+      description: 'Search bus stops by name.',
+      inputSchema: {
+        q: z.string().min(2),
+        limit: z.number().int().min(1).max(50).optional(),
+      },
+    },
+    async ({ q, limit }) => {
+      const stops = await deps.provider.searchStops(q, limit ?? 20);
+      return ok({ stops });
+    },
+  );
+
+  server.registerTool(
+    'get_stop',
+    {
+      title: 'Get a bus stop',
+      description: 'Get stop details including the lines serving it.',
+      inputSchema: { stopId: z.string() },
+    },
+    async ({ stopId }) => {
+      const stop = await deps.provider.getStop(stopId);
+      if (!stop) return fail(new AppError(404, 'not_found', stopId));
+      return ok({ stop });
+    },
+  );
+
+  server.registerTool(
+    'get_config',
+    {
+      title: 'List configured stops',
+      description: 'List the user-configured stops.',
+      inputSchema: {},
+    },
+    async () => ok({ stops: deps.config.listConfig() }),
+  );
+
+  server.registerTool(
+    'add_stop',
+    {
+      title: 'Add a configured stop',
+      description: 'Add a stop (with optional line filter) to the dashboard config.',
+      inputSchema: createConfigStopBodySchema,
+    },
+    async (args) => {
+      try {
+        const stop = deps.config.addConfigStop(args);
+        return ok({ stop });
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  );
 
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from './components/ui/button';
+import ConfigPage from './pages/Config';
 
 type Tab = 'dashboard' | 'config';
 
@@ -26,13 +27,11 @@ export default function App() {
           Config
         </Button>
       </nav>
-      <main>
-        {tab === 'dashboard' ? (
-          <p className="text-sm text-slate-600">Dashboard view coming in a later phase.</p>
-        ) : (
-          <p className="text-sm text-slate-600">Config panel coming in a later phase.</p>
-        )}
-      </main>
+      <main>{tab === 'dashboard' ? <DashboardPlaceholder /> : <ConfigPage />}</main>
     </div>
   );
+}
+
+function DashboardPlaceholder() {
+  return <p className="text-sm text-slate-600">Dashboard view coming in a later phase.</p>;
 }
