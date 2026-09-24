@@ -14,8 +14,10 @@ optional per-stop line filters), persists that configuration, and shows the
 next scheduled buses (line, destination, scheduled passing time, countdown)
 per stop. Schedule data comes from the Carris static GTFS feed, ingested
 locally, behind a provider abstraction that leaves a seam for future realtime
-ETA. The feature also bootstraps the app skeleton (backend entrypoints + DB,
-SPA entry) that the template scaffold intentionally left empty.
+ETA (GO/TML GTFS-RT TripUpdates/VehiclePositions merged at the DTO level — see
+`research.md` §9; a separate future feature, e.g. `002-live-eta`). The feature
+also bootstraps the app skeleton (backend entrypoints + DB, SPA entry) that
+the template scaffold intentionally left empty.
 
 ## Technical Context
 
@@ -45,8 +47,9 @@ for the SPA (Home Sweet Home dashboard environment)
 `GET /api/stops/:id/times` returns in < 200 ms p95 (indexed query)
 
 **Constraints**: REST and MCP MUST share one service layer; single user, no
-auth; scheduled times only for v1 with a provider seam for realtime ETA;
-UTC canonical internally, Europe/Lisbon display (DST-aware)
+auth; scheduled times only for v1 with a provider seam for realtime ETA (GO/TML
+GTFS-RT later — merged predictions, same `Passing[]` DTO); UTC canonical
+internally, Europe/Lisbon display (DST-aware)
 
 **Scale/Scope**: 1 home user; ~2,300 stops, ~176 lines, ~2.4 M stop_times in
 the ingested feed; SPA with dashboard + config panel

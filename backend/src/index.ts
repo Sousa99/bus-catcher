@@ -1,23 +1,20 @@
 import { config } from './config';
+import { migrateDb } from './db/migrate';
+import { startHttpServer } from './http/server';
 import { logger } from './lib/logger';
+import { startMcpServer } from './mcp';
 
-function resolveMode(): 'http' | 'mcp' {
-  return process.argv.includes('--mcp') ? 'mcp' : 'http';
-}
-
-const mode = resolveMode();
+const mode = process.argv.includes('--mcp') ? 'mcp' : 'http';
 
 logger.info('bus-catcher backend starting', {
   mode,
   serverName: config.serverName,
 });
 
+migrateDb();
+
 if (mode === 'http') {
-  logger.info(`REST server will listen on :${config.restPort}`, {
-    wired: 'Phase 2',
-  });
+  startHttpServer();
 } else {
-  logger.info(`MCP server will listen on :${config.mcpPort}`, {
-    wired: 'Phase 2',
-  });
+  startMcpServer();
 }

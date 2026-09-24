@@ -105,3 +105,38 @@ and alternatives considered.
   (backend entrypoints + db, SPA bootstrap) in addition to the bus-times
   functionality; `.storybook` and the published component library are not
   needed for v1 (the `build:lib` script remains intact).
+
+## 9. Future realtime integration (documented seam)
+
+Scheduled times are v1; live updates arrive later without touching the
+application contract (spec FR-010, SC-005; constitution principle III).
+
+- **Realtime sources (GTFS-RT)**: `TripUpdates` (per-stop predicted
+  arrival/departure or `delay` vs. schedule) upgrades our `scheduledAt`;
+  `VehiclePositions` (live lat/lon, speed) enables a live map / nearest-bus.
+- **Lisbon availability**: Carris's own realtime feed is gated ("public, not
+  free"; powers Google Maps + CARRISway). The realistic open source is the
+  **GO/TML hub** (`go.tmlmobilidade.pt`), which publishes GTFS-RT
+  TripUpdates/VehiclePositions (ETA flagged experimental). The future
+  provider is therefore GO/TML GTFS-RT.
+- **Merge model**: a `RealtimeProvider` implements the same `ScheduleProvider`
+  interface; it polls GO/TML into a backend cache (~15-30 s), matches
+  predictions by trip_id + stop_id against our schedule rows, and returns the
+  same `Passing[]` DTO (optionally adding `source`/`delayMinutes` as
+  backward-compatible fields). The dashboard component is unchanged.
+- **Positions**: a separate capability behind the same provider interface
+  (`getVehiclePositions(area)`), served by a future endpoint + map widget —
+  a new consumer, not a rewrite.
+- **Delivery**: backend is the single poller + cache; SPA refreshes via
+  TanStack `refetchInterval` (push/SSE optional later). Freshness covers both
+  worlds: scheduled `last_refresh` and the realtime feed's own timestamp,
+  with stale-data flagging per constitution II.
+- **Deferred to a separate feature** (e.g. `002-live-eta`); Phase 2 only must
+  keep the `ScheduleProvider` interface honest.
+
+- No `backend/src` at all; no `tsconfig.json` in `backend/` or `frontend/`;
+  frontend lacks `index.html`, `main.tsx`, `App.tsx`, and `.storybook/`.
+- **Decision**: this "basic setup" feature creates the runnable app skeleton
+  (backend entrypoints + db, SPA bootstrap) in addition to the bus-times
+  functionality; `.storybook` and the published component library are not
+  needed for v1 (the `build:lib` script remains intact).
