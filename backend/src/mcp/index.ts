@@ -141,6 +141,45 @@ export function startMcpServer(deps: BackendDeps): void {
     },
   );
 
+  server.registerTool(
+    'update_stop',
+    {
+      title: 'Update a configured stop',
+      description: 'Change a configured stop line filter, display order, or enabled state.',
+      inputSchema: {
+        id: z.number().int(),
+        lineFilter: z.array(z.string()).optional(),
+        displayOrder: z.number().int().optional(),
+        enabled: z.boolean().optional(),
+      },
+    },
+    async (args) => {
+      try {
+        const stop = deps.config.updateConfigStop(args.id, args);
+        return ok({ stop });
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'remove_stop',
+    {
+      title: 'Remove a configured stop',
+      description: 'Remove a configured stop from the dashboard config.',
+      inputSchema: { id: z.number().int() },
+    },
+    async ({ id }) => {
+      try {
+        deps.config.removeConfigStop(id);
+        return ok({ removed: true });
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  );
+
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,

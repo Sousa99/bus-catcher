@@ -15,6 +15,10 @@ vi.mock('../api/client', () => ({
     listLines: vi.fn(),
     getConfig: vi.fn(),
     addConfigStop: vi.fn(),
+    getStopTimes: vi.fn(),
+    getStatus: vi.fn(),
+    updateConfigStop: vi.fn(),
+    removeConfigStop: vi.fn(),
   },
 }));
 
@@ -22,6 +26,8 @@ const mockedSearch = vi.mocked(api.searchStops);
 const mockedGetStop = vi.mocked(api.getStop);
 const mockedGetConfig = vi.mocked(api.getConfig);
 const mockedAdd = vi.mocked(api.addConfigStop);
+const mockedUpdate = vi.mocked(api.updateConfigStop);
+const mockedRemove = vi.mocked(api.removeConfigStop);
 
 function renderWithQuery(ui: ReactElement) {
   const queryClient = new QueryClient({
@@ -35,6 +41,8 @@ beforeEach(() => {
   mockedGetStop.mockReset();
   mockedGetConfig.mockReset();
   mockedAdd.mockReset();
+  mockedUpdate.mockReset();
+  mockedRemove.mockReset();
 });
 
 describe('ConfigPanel', () => {
@@ -85,6 +93,117 @@ describe('ConfigPanel', () => {
         stopId: 'S1',
         lineFilter: ['736'],
       });
+    });
+  });
+
+  it('removes a configured stop', async () => {
+    mockedGetConfig.mockResolvedValue({
+      stops: [
+        {
+          id: 1,
+          stop: { id: 'S1', name: 'Av. Teste', lat: 0, lon: 0 },
+          lineFilter: [],
+          displayOrder: 0,
+          enabled: true,
+        },
+      ],
+    });
+    mockedRemove.mockResolvedValue(undefined);
+
+    renderWithQuery(<ConfigPanel />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove Av. Teste' }));
+    await waitFor(() => {
+      expect(mockedRemove.mock.calls[0]?.[0]).toBe(1);
+    });
+  });
+
+  it('toggles the enabled state', async () => {
+    mockedGetConfig.mockResolvedValue({
+      stops: [
+        {
+          id: 1,
+          stop: { id: 'S1', name: 'Av. Teste', lat: 0, lon: 0 },
+          lineFilter: [],
+          displayOrder: 0,
+          enabled: true,
+        },
+      ],
+    });
+    mockedUpdate.mockResolvedValue({
+      stop: {
+        id: 1,
+        stop: { id: 'S1', name: 'Av. Teste', lat: 0, lon: 0 },
+        lineFilter: [],
+        displayOrder: 0,
+        enabled: false,
+      },
+    });
+
+    renderWithQuery(<ConfigPanel />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Disable' }));
+    await waitFor(() => {
+      expect(mockedUpdate.mock.calls[0]).toEqual([1, { enabled: false }]);
+    });
+  });
+
+  it('edits the line filter of a configured stop', async () => {
+    const stop: ConfigStop = {
+      id: 1,
+      stop: { id: 'S1', name: 'Av. Teste', lat: 0, lon: 0 },
+      lineFilter: [],
+      displayOrder: 0,
+      enabled: true,
+    };
+    mockedGetConfig.mockResolvedValue({ stops: [stop] });
+    mockedGetStop.mockResolvedValue({
+      stop: {
+        ...stop.stop,
+        lines: [{ id: 'L1', shortName: '736', longName: 'Cais' }],
+      },
+    });
+    mockedUpdate.mockResolvedValue({
+      stop: { ...stop, lineFilter: ['736'] },
+    });
+
+    renderWithQuery(<ConfigPanel />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit' }));
+    await userEvent.click(await screen.findByRole('button', { name: '736' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(mockedUpdate.mock.calls[0]).toEqual([1, { lineFilter: ['736'] }]);
+    });
+  });
+
+  it('reorders stops by swapping display order', async () => {
+    const first: ConfigStop = {
+      id: 1,
+      stop: { id: 'S1', name: 'Av. Teste', lat: 0, lon: 0 },
+      lineFilter: [],
+      displayOrder: 0,
+      enabled: true,
+    };
+    const second: ConfigStop = {
+      id: 2,
+      stop: { id: 'S2', name: 'Rua Teste', lat: 0, lon: 0 },
+      lineFilter: [],
+      displayOrder: 1,
+      enabled: true,
+    };
+    mockedGetConfig.mockResolvedValue({ stops: [first, second] });
+    mockedUpdate.mockResolvedValue({ stop: first });
+
+    renderWithQuery(<ConfigPanel />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Move Av. Teste down' }));
+    await waitFor(() => {
+      expect(mockedUpdate.mock.calls).toEqual([
+        [1, { displayOrder: 1 }],
+        [2, { displayOrder: 0 }],
+      ]);
     });
   });
 });

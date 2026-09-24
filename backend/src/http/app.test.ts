@@ -151,4 +151,74 @@ describe('US1 REST contract', () => {
     const { app } = setup();
     expect((await app.request('/api/stops/NOPE/times')).status).toBe(404);
   });
+
+  it('PUT /api/config/stops/:id updates a configured stop', async () => {
+    const { app } = setup();
+    await app.request('/api/config/stops', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ stopId: 'S1' }),
+    });
+    const res = await app.request('/api/config/stops/1', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ enabled: false, lineFilter: ['736'] }),
+    });
+    expect(res.status).toBe(200);
+    const body = await json<{ stop: { enabled: boolean; lineFilter: string[] } }>(res);
+    expect(body.stop.enabled).toBe(false);
+    expect(body.stop.lineFilter).toEqual(['736']);
+  });
+
+  it('PUT /api/config/stops/:id invalid body → 400', async () => {
+    const { app } = setup();
+    const res = await app.request('/api/config/stops/1', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ displayOrder: 'not-a-number' }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('PUT /api/config/stops/:id unknown line → 400', async () => {
+    const { app } = setup();
+    await app.request('/api/config/stops', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ stopId: 'S1' }),
+    });
+    const res = await app.request('/api/config/stops/1', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ lineFilter: ['999'] }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('PUT /api/config/stops/999 → 404', async () => {
+    const { app } = setup();
+    const res = await app.request('/api/config/stops/999', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ enabled: false }),
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it('DELETE /api/config/stops/:id → 204', async () => {
+    const { app } = setup();
+    await app.request('/api/config/stops', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ stopId: 'S1' }),
+    });
+    expect((await app.request('/api/config/stops/1', { method: 'DELETE' })).status).toBe(204);
+    const list = await json<{ stops: unknown[] }>(await app.request('/api/config'));
+    expect(list.stops).toEqual([]);
+  });
+
+  it('DELETE /api/config/stops/999 → 404', async () => {
+    const { app } = setup();
+    expect((await app.request('/api/config/stops/999', { method: 'DELETE' })).status).toBe(404);
+  });
 });

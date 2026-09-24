@@ -99,4 +99,22 @@ describe('config service', () => {
     backend.config.removeConfigStop(added.id);
     expect(backend.config.listConfig()).toEqual([]);
   });
+
+  it('throws 404 when removing an unknown config id', () => {
+    const backend = setup();
+    expectAppError(() => backend.config.removeConfigStop(999), 404, 'not_found');
+  });
+
+  it('updates displayOrder to reorder stops', () => {
+    const backend = setup();
+    const first = backend.config.addConfigStop({ stopId: 'S1' });
+    const second = backend.config.addConfigStop({ stopId: 'S2' });
+    const reordered = backend.config.updateConfigStop(first.id, {
+      displayOrder: second.displayOrder,
+    });
+    backend.config.updateConfigStop(second.id, { displayOrder: first.displayOrder });
+    const list = backend.config.listConfig();
+    expect(reordered.displayOrder).toBe(second.displayOrder);
+    expect(list.map((s) => s.stop.id)).toEqual(['S2', 'S1']);
+  });
 });

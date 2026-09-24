@@ -25,11 +25,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiError(response.status, error?.error ?? 'request_failed', error?.detail);
   }
+  if (response.status === 204) {
+    return undefined as T;
+  }
   return (await response.json()) as T;
 }
 
 export interface AddConfigStopBody {
   stopId: string;
+  lineFilter?: string[];
+  displayOrder?: number;
+  enabled?: boolean;
+}
+
+export interface UpdateConfigStopBody {
   lineFilter?: string[];
   displayOrder?: number;
   enabled?: boolean;
@@ -54,4 +63,10 @@ export const api = {
     );
   },
   getStatus: () => request<Status>('/status'),
+  updateConfigStop: (id: number, body: UpdateConfigStopBody) =>
+    request<{ stop: ConfigStop }>(`/config/stops/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  removeConfigStop: (id: number) => request<void>(`/config/stops/${id}`, { method: 'DELETE' }),
 };

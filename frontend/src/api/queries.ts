@@ -57,3 +57,24 @@ export function useStatus() {
     refetchInterval: 60_000,
   });
 }
+
+export function useUpdateStop() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: Parameters<typeof api.updateConfigStop>[1] }) =>
+      api.updateConfigStop(id, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['config'] });
+    },
+  });
+}
+
+export function useRemoveStop() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.removeConfigStop(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['config'] });
+    },
+  });
+}
