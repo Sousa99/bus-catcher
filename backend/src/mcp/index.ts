@@ -81,6 +81,40 @@ export function startMcpServer(deps: BackendDeps): void {
   );
 
   server.registerTool(
+    'get_stop_times',
+    {
+      title: 'Next scheduled passing times',
+      description: 'Get the next scheduled buses at a stop, optionally filtered by line.',
+      inputSchema: {
+        stopId: z.string(),
+        limit: z.number().int().min(1).max(20).optional(),
+        lines: z.array(z.string()).optional(),
+      },
+    },
+    async ({ stopId, limit, lines }) => {
+      try {
+        const times = await deps.schedule.getStopTimes(stopId, {
+          limit: limit ?? 5,
+          lines,
+        });
+        return ok({ stopId, times });
+      } catch (err) {
+        return fail(err);
+      }
+    },
+  );
+
+  server.registerTool(
+    'get_status',
+    {
+      title: 'Get schedule freshness',
+      description: 'Get the last refresh time, feed version, and staleness flag.',
+      inputSchema: {},
+    },
+    async () => ok(await deps.schedule.getStatus()),
+  );
+
+  server.registerTool(
     'get_config',
     {
       title: 'List configured stops',

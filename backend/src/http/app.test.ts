@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { createTestBackend, seedTestFeed } from '../test-utils/db';
+import { createScheduleService } from '../services/schedule';
 import { createApp } from './app';
 
 function setup() {
   const backend = createTestBackend();
   seedTestFeed(backend);
-  const app = createApp({ provider: backend.provider, config: backend.config });
+  const app = createApp({
+    provider: backend.provider,
+    config: backend.config,
+    schedule: createScheduleService(backend.provider),
+  });
   return { app, backend };
 }
 
@@ -104,5 +109,46 @@ describe('US1 REST contract', () => {
       body: JSON.stringify({ stopId: '' }),
     });
     expect(res.status).toBe(400);
+  });
+
+  it('GET /api/status → 200 with freshness fields', async () => {
+    const { app } = setup();
+    const res = await app.request('/api/status');
+    expect(res.status).toBe(200);
+    const body = await json<{
+      lastRefresh: string | null;
+      feedVersion: string | null;
+      stale: boolean;
+    }>(res);
+    expect(body.lastRefresh).toBeNull();
+    expect(typeof body.stale).toBe('boolean');
+  });
+
+  it('GET /api/stops/S1/times → 200 with next times', async () => {
+    const { app } = setup();
+    const res = await app.request('/api/stops/S1/times?limit=2');
+    expect(res.status).toBe(200);
+    const body = await json<{ stopId: string; times: Array<{ minutesUntil: number }> }>(res);
+    expect(body.stopId).toBe('S1');
+    expect(body.times.length).toBe(2);
+    expect(body.times[0]!.minutesUntil).toBeLessThan(body.times[1]!.minutesUntil);
+  });
+
+  it('GET /api/stops/S1/times respects the line filter', async () => {
+    const { app } = setup();
+    const res = await app.request('/api/stops/S1/times?line=706');
+    expect(res.status).toBe(200);
+    const body = await json<{ times: unknown[] }>(res);
+    expect(body.times).toEqual([]);
+  });
+
+  it('GET /api/stops/S1/times?limit=999 → 400', async () => {
+    const { app } = setup();
+    expect((await app.request('/api/stops/S1/times?limit=999')).status).toBe(400);
+  });
+
+  it('GET /api/stops/NOPE/times → 404', async () => {
+    const { app } = setup();
+    expect((await app.request('/api/stops/NOPE/times')).status).toBe(404);
   });
 });

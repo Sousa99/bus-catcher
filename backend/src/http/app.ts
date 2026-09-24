@@ -2,13 +2,19 @@ import { Hono } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { AppError } from '../lib/errors';
 import { logger } from '../lib/logger';
-import { createConfigStopBodySchema, searchStopsQuerySchema } from '../lib/schemas';
+import {
+  createConfigStopBodySchema,
+  nextTimesQuerySchema,
+  searchStopsQuerySchema,
+} from '../lib/schemas';
 import type { ConfigService } from '../services/config';
+import type { ScheduleService } from '../services/schedule';
 import type { ScheduleProvider } from '../providers/types';
 
 export interface AppDeps {
   provider: ScheduleProvider;
   config: ConfigService;
+  schedule: ScheduleService;
 }
 
 export function createApp(deps: AppDeps): Hono {
@@ -46,6 +52,34 @@ export function createApp(deps: AppDeps): Hono {
     const stop = await deps.provider.getStop(c.req.param('id'));
     if (!stop) return c.json({ error: 'not_found' }, 404);
     return c.json({ stop });
+  });
+
+  app.get('/api/stops/:id/times', async (c) => {
+    const stopId = c.req.param('id');
+    const parsed = nextTimesQuerySchema.safeParse({
+      limit: c.req.query('limit') ?? undefined,
+      line: c.req.queries('line'),
+    });
+    if (!parsed.success) {
+      return c.json({ error: 'invalid_query', detail: parsed.error.issues }, 400);
+    }
+    try {
+      const times = await deps.schedule.getStopTimes(stopId, {
+        limit: parsed.data.limit,
+        lines: parsed.data.line,
+      });
+      return c.json({ stopId, times });
+    } catch (err) {
+      if (err instanceof AppError) {
+        return c.json({ error: err.code, detail: err.detail }, err.status as ContentfulStatusCode);
+      }
+      throw err;
+    }
+  });
+
+  app.get('/api/status', async (c) => {
+    const status = await deps.schedule.getStatus();
+    return c.json(status);
   });
 
   app.get('/api/config', (c) => {

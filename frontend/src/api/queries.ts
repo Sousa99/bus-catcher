@@ -41,3 +41,19 @@ export function useAddStop() {
     },
   });
 }
+
+export function useStopTimes(stopId: string, limit = 5, lines?: string[]) {
+  return useQuery({
+    queryKey: ['stop-times', stopId, limit, lines?.join(',') ?? ''],
+    queryFn: () => api.getStopTimes(stopId, limit, lines),
+    refetchInterval: 60_000,
+  });
+}
+
+export function useStatus() {
+  return useQuery({
+    queryKey: ['status'],
+    queryFn: api.getStatus,
+    refetchInterval: 60_000,
+  });
+}
