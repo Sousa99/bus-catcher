@@ -9,6 +9,7 @@ export function startHttpServer(deps: BackendDeps): void {
     provider: deps.provider,
     config: deps.config,
     schedule: deps.schedule,
+    refresh: deps.refresh,
   });
   serve({ fetch: app.fetch, port: config.restPort }, (info) => {
     logger.info('REST server listening', {

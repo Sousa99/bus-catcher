@@ -35,4 +35,5 @@ export interface Status {
   lastRefresh: string | null;
   feedVersion: string | null;
   stale: boolean;
+  refreshing: boolean;
 }

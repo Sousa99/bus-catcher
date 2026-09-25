@@ -42,6 +42,7 @@ export const statusSchema = z.object({
   lastRefresh: z.string().nullable(),
   feedVersion: z.string().nullable(),
   stale: z.boolean(),
+  refreshing: z.boolean(),
 });
 export type Status = z.infer<typeof statusSchema>;
 

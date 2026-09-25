@@ -18,5 +18,5 @@ export interface ScheduleProvider {
   getStop(stopId: string): Promise<StopWithLines | null>;
   listLines(): Promise<Line[]>;
   getNextTimes(stopId: string, options?: NextTimesOptions): Promise<Passing[]>;
-  getStatus(): Promise<Status>;
+  getStatus(): Promise<Omit<Status, 'refreshing'>>;
 }

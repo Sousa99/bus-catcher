@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 import { api } from '../api/client';
@@ -16,12 +17,16 @@ vi.mock('../api/client', () => ({
     addConfigStop: vi.fn(),
     getStopTimes: vi.fn(),
     getStatus: vi.fn(),
+    updateConfigStop: vi.fn(),
+    removeConfigStop: vi.fn(),
+    refreshSchedule: vi.fn(),
   },
 }));
 
 const mockedGetConfig = vi.mocked(api.getConfig);
 const mockedGetStopTimes = vi.mocked(api.getStopTimes);
 const mockedGetStatus = vi.mocked(api.getStatus);
+const mockedRefresh = vi.mocked(api.refreshSchedule);
 
 function renderWithQuery(ui: ReactElement) {
   const queryClient = new QueryClient({
@@ -34,6 +39,7 @@ beforeEach(() => {
   mockedGetConfig.mockReset();
   mockedGetStopTimes.mockReset();
   mockedGetStatus.mockReset();
+  mockedRefresh.mockReset();
 });
 
 describe('DashboardPage', () => {
@@ -43,6 +49,7 @@ describe('DashboardPage', () => {
       lastRefresh: null,
       feedVersion: null,
       stale: true,
+      refreshing: false,
     });
 
     renderWithQuery(<DashboardPage />);
@@ -76,6 +83,7 @@ describe('DashboardPage', () => {
       lastRefresh: '2026-09-25T08:00:00.000Z',
       feedVersion: 'abc',
       stale: false,
+      refreshing: false,
     });
 
     renderWithQuery(<DashboardPage />);
@@ -87,5 +95,37 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(mockedGetStopTimes).toHaveBeenCalled();
     });
+  });
+
+  it('triggers a refresh from the button', async () => {
+    mockedGetConfig.mockResolvedValue({ stops: [] });
+    mockedGetStatus.mockResolvedValue({
+      lastRefresh: '2026-09-25T08:00:00.000Z',
+      feedVersion: 'abc',
+      stale: false,
+      refreshing: false,
+    });
+    mockedRefresh.mockResolvedValue({ status: 'started' });
+
+    renderWithQuery(<DashboardPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Refresh schedule' }));
+    await waitFor(() => {
+      expect(mockedRefresh).toHaveBeenCalled();
+    });
+  });
+
+  it('shows the refreshing banner while a refresh is running', async () => {
+    mockedGetConfig.mockResolvedValue({ stops: [] });
+    mockedGetStatus.mockResolvedValue({
+      lastRefresh: '2026-09-25T08:00:00.000Z',
+      feedVersion: 'abc',
+      stale: false,
+      refreshing: true,
+    });
+
+    renderWithQuery(<DashboardPage />);
+
+    expect(await screen.findByText(/Refreshing the schedule/)).toBeInTheDocument();
   });
 });

@@ -108,10 +108,20 @@ export function startMcpServer(deps: BackendDeps): void {
     'get_status',
     {
       title: 'Get schedule freshness',
-      description: 'Get the last refresh time, feed version, and staleness flag.',
+      description: 'Get the last refresh time, feed version, staleness, and refresh state.',
       inputSchema: {},
     },
     async () => ok(await deps.schedule.getStatus()),
+  );
+
+  server.registerTool(
+    'refresh_schedule',
+    {
+      title: 'Refresh the schedule',
+      description: 'Re-download and re-ingest the Carris GTFS feed.',
+      inputSchema: {},
+    },
+    async () => ok(deps.refresh.refresh()),
   );
 
   server.registerTool(

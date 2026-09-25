@@ -10,12 +10,14 @@ import {
 } from '../lib/schemas';
 import type { ConfigService } from '../services/config';
 import type { ScheduleService } from '../services/schedule';
+import type { RefreshService } from '../services/refresh';
 import type { ScheduleProvider } from '../providers/types';
 
 export interface AppDeps {
   provider: ScheduleProvider;
   config: ConfigService;
   schedule: ScheduleService;
+  refresh: RefreshService;
 }
 
 export function createApp(deps: AppDeps): Hono {
@@ -81,6 +83,11 @@ export function createApp(deps: AppDeps): Hono {
   app.get('/api/status', async (c) => {
     const status = await deps.schedule.getStatus();
     return c.json(status);
+  });
+
+  app.post('/api/refresh', (c) => {
+    const result = deps.refresh.refresh();
+    return c.json(result, 202);
   });
 
   app.get('/api/config', (c) => {

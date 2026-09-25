@@ -20,7 +20,11 @@ export interface TestBackend {
 }
 
 export function createTestDb(): TestDb {
-  const sqlite = new Database(':memory:');
+  return createTestDbAt(':memory:');
+}
+
+export function createTestDbAt(dbPath: string): TestDb {
+  const sqlite = new Database(dbPath);
   const db = drizzle(sqlite, { schema });
   const migrationsFolder = new URL('../../drizzle', import.meta.url).pathname;
   migrate(db, { migrationsFolder });

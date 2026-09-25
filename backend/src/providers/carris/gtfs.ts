@@ -208,6 +208,10 @@ export function decodeGtfsZip(zip: Record<string, Uint8Array>): Record<string, s
   return files;
 }
 
+export function parseGtfsZipBuffer(buffer: Uint8Array): ParsedGtfs {
+  return parseGtfsFiles(decodeGtfsZip(unzipGtfs(buffer)));
+}
+
 export function parseGtfsFiles(files: Record<string, string>): ParsedGtfs {
   const warnings: string[] = [];
 

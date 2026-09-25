@@ -11,7 +11,7 @@
     "dev:mcp": "tsx watch src/index.ts --mcp",
     "start": "tsx src/index.ts --http",
     "start:mcp": "tsx src/index.ts --mcp",
-    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/index.js && esbuild src/db/migrate.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/migrate.js",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/index.js && esbuild src/db/migrate.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/migrate.js && esbuild src/services/refresh-worker.ts --bundle --platform=node --format=esm --packages=external --outfile=dist/refresh-worker.js",
     "ingest": "tsx src/cli/ingest.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",

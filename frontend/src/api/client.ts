@@ -63,6 +63,10 @@ export const api = {
     );
   },
   getStatus: () => request<Status>('/status'),
+  refreshSchedule: () =>
+    request<{ status: 'started' | 'in_progress' }>('/refresh', {
+      method: 'POST',
+    }),
   updateConfigStop: (id: number, body: UpdateConfigStopBody) =>
     request<{ stop: ConfigStop }>(`/config/stops/${id}`, {
       method: 'PUT',

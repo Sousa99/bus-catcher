@@ -58,6 +58,16 @@ export function useStatus() {
   });
 }
 
+export function useRefresh() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.refreshSchedule,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['status'] });
+    },
+  });
+}
+
 export function useUpdateStop() {
   const queryClient = useQueryClient();
   return useMutation({

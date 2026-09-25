@@ -1,13 +1,17 @@
 import { AppError } from '../lib/errors';
 import type { NextTimesOptions, ScheduleProvider } from '../providers/types';
 import type { Passing, Status } from '../lib/schemas';
+import type { RefreshService } from './refresh';
 
 export interface ScheduleService {
   getStopTimes(stopId: string, options?: NextTimesOptions): Passing[] | Promise<Passing[]>;
   getStatus(): Promise<Status>;
 }
 
-export function createScheduleService(provider: ScheduleProvider): ScheduleService {
+export function createScheduleService(
+  provider: ScheduleProvider,
+  refresh?: RefreshService,
+): ScheduleService {
   return {
     async getStopTimes(stopId, options: NextTimesOptions = {}) {
       const stop = await provider.getStop(stopId);
@@ -20,6 +24,9 @@ export function createScheduleService(provider: ScheduleProvider): ScheduleServi
         lines: options.lines,
       });
     },
-    getStatus: () => provider.getStatus(),
+    async getStatus() {
+      const status = await provider.getStatus();
+      return { ...status, refreshing: refresh?.isRefreshing() ?? false };
+    },
   };
 }

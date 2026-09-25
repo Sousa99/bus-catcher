@@ -60,6 +60,7 @@ describe('schedule service — getStatus', () => {
     const status = await schedule.getStatus();
     expect(status.lastRefresh).toBeNull();
     expect(status.stale).toBe(true);
+    expect(status.refreshing).toBe(false);
   });
 
   it('reports fresh when refreshed recently', async () => {
@@ -69,5 +70,6 @@ describe('schedule service — getStatus', () => {
     const status = await schedule.getStatus();
     expect(status.feedVersion).toBe('abc123');
     expect(status.stale).toBe(false);
+    expect(status.refreshing).toBe(false);
   });
 });

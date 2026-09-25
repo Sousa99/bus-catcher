@@ -52,7 +52,12 @@ describe('passing schema', () => {
 describe('status schema', () => {
   it('accepts nullable freshness fields', () => {
     expect(
-      statusSchema.safeParse({ lastRefresh: null, feedVersion: null, stale: false }).success,
+      statusSchema.safeParse({
+        lastRefresh: null,
+        feedVersion: null,
+        stale: false,
+        refreshing: false,
+      }).success,
     ).toBe(true);
   });
 });

@@ -29,13 +29,21 @@ function insertChunked(
 }
 
 /**
- * Replaces the static schedule tables with the parsed feed in one transaction
- * (atomic refresh). User configuration (configured_stops) and metadata are
- * preserved; FK enforcement is off, so stale references are flagged at read
- * time (spec edge cases).
+ * Atomically replaces the static schedule tables with the parsed feed in a
+ * single transaction. Runs on a worker thread (see services/refresh.ts) so it
+ * never blocks the main server thread. User configuration (configured_stops)
+ * and metadata are preserved; FK enforcement is disabled because configured
+ * stops may reference stops being replaced, and stale references are flagged
+ * at read time (spec edge cases).
  */
-export function ingestParsedGtfs(sqlite: Database.Database, input: IngestInput): void {
+export async function ingestParsedGtfs(
+  sqlite: Database.Database,
+  input: IngestInput,
+): Promise<void> {
+  sqlite.pragma('foreign_keys = OFF');
+
   const { parsed, feedVersion, fetchedAt } = input;
+  const startedAt = Date.now();
 
   const run = sqlite.transaction(() => {
     sqlite.exec(
@@ -129,8 +137,8 @@ export function ingestParsedGtfs(sqlite: Database.Database, input: IngestInput):
     metadataStmt.run('last_refresh', fetchedAt);
   });
 
-  const startedAt = Date.now();
   run();
+
   logger.info('ingest complete', {
     lines: parsed.lines.length,
     stops: parsed.stops.length,

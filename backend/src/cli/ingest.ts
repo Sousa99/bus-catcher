@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { config } from '../config';
-import { createSqlite } from '../db/client';
+import { createIngestSqlite } from '../db/client';
 import { migrateDb } from '../db/migrate';
 import { logger } from '../lib/logger';
 import { decodeGtfsZip, downloadGtfs, parseGtfsFiles, unzipGtfs } from '../providers/carris/gtfs';
@@ -22,13 +22,14 @@ async function main(): Promise<void> {
   }
 
   migrateDb();
-  const sqlite = createSqlite();
+  const sqlite = createIngestSqlite();
   try {
-    ingestParsedGtfs(sqlite, {
+    await ingestParsedGtfs(sqlite, {
       parsed,
       feedVersion,
       fetchedAt: new Date().toISOString(),
     });
+    sqlite.pragma('wal_checkpoint(TRUNCATE)');
   } finally {
     sqlite.close();
   }
