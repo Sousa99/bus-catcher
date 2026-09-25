@@ -28,15 +28,20 @@ function toConfigStop(
     displayOrder: number;
     enabled: number;
   },
-  stopRow: { id: string; name: string; lat: number | null; lon: number | null },
+  stopRow: { id: string; name: string; lat: number | null; lon: number | null } | null,
 ): ConfigStop {
-  return {
+  const base = {
     id: row.id,
-    stop: toStop(stopRow),
     lineFilter: readLineFilter(row.lineFilter),
     displayOrder: row.displayOrder,
     enabled: row.enabled === 1,
   };
+  if (!stopRow) {
+    // The stop vanished from a refreshed feed; keep the row so the user can
+    // see and remove it (spec edge case).
+    return { ...base, stop: { id: row.stopId, name: row.stopId, lat: 0, lon: 0 }, missing: true };
+  }
+  return { ...base, stop: toStop(stopRow) };
 }
 
 function loadStop(
@@ -89,7 +94,6 @@ function loadConfigStop(db: DB, id: number): ConfigStop | null {
     .get();
   if (!row) return null;
   const stopRow = loadStop(db, row.stopId);
-  if (!stopRow) return null;
   return toConfigStop(row, stopRow);
 }
 
@@ -119,13 +123,7 @@ export function listConfig(db: DB): ConfigStop[] {
       .map((s) => [s.id, s]),
   );
 
-  return rows
-    .map((row) => {
-      const stopRow = stopsById.get(row.stopId);
-      if (!stopRow) return null;
-      return toConfigStop(row, stopRow);
-    })
-    .filter((s): s is ConfigStop => s !== null);
+  return rows.map((row) => toConfigStop(row, stopsById.get(row.stopId) ?? null));
 }
 
 export function getConfigStop(db: DB, id: number): ConfigStop | null {

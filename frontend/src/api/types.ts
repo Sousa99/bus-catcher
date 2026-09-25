@@ -29,6 +29,7 @@ export interface ConfigStop {
   lineFilter: string[];
   displayOrder: number;
   enabled: boolean;
+  missing?: boolean;
 }
 
 export interface Status {

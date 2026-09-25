@@ -32,11 +32,40 @@ function fail(err: unknown): { isError: true; content: TextContent[] } {
 }
 
 export function startMcpServer(deps: BackendDeps): void {
-  const server = new McpServer({
-    name: config.serverName,
-    version: '0.1.0',
+  const httpServer = createServer((req: IncomingMessage, res: ServerResponse) => {
+    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+    if (url.pathname !== '/mcp') {
+      res.writeHead(404).end('not found');
+      return;
+    }
+    // Stateless mode: the SDK forbids reusing a stateless transport across
+    // requests, and a Protocol cannot be reconnected, so each request gets a
+    // fresh McpServer + transport with the same registered tools.
+    const server = new McpServer({
+      name: config.serverName,
+      version: '0.1.0',
+    });
+    registerTools(server, deps);
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
+    void server
+      .connect(transport)
+      .then(() => transport.handleRequest(req, res))
+      .catch((err: unknown) => {
+        logger.error('MCP request failed', {
+          message: err instanceof Error ? err.message : String(err),
+        });
+      });
   });
 
+  httpServer.listen(config.mcpPort, () => {
+    logger.info('MCP server listening', { port: config.mcpPort });
+  });
+}
+
+function registerTools(server: McpServer, deps: BackendDeps): void {
   server.registerTool(
     'list_lines',
     {
@@ -189,27 +218,4 @@ export function startMcpServer(deps: BackendDeps): void {
       }
     },
   );
-
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined,
-    enableJsonResponse: true,
-  });
-  void server.connect(transport);
-
-  const httpServer = createServer((req: IncomingMessage, res: ServerResponse) => {
-    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
-    if (url.pathname !== '/mcp') {
-      res.writeHead(404).end('not found');
-      return;
-    }
-    void transport.handleRequest(req, res).catch((err: unknown) => {
-      logger.error('MCP request failed', {
-        message: err instanceof Error ? err.message : String(err),
-      });
-    });
-  });
-
-  httpServer.listen(config.mcpPort, () => {
-    logger.info('MCP server listening', { port: config.mcpPort });
-  });
 }

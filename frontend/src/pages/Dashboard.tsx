@@ -70,7 +70,22 @@ function StatusBanner({ status }: { status: Status | undefined }) {
 }
 
 function StopCard({ config }: { config: ConfigStop }) {
-  const times = useStopTimes(config.stop.id, 5, config.lineFilter);
+  const times = useStopTimes(config.stop.id, 5, config.lineFilter, !config.missing);
+
+  if (config.missing) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{config.stop.name}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-amber-700">
+            This stop no longer exists in the schedule — remove it in Config.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

@@ -117,4 +117,36 @@ describe('config service', () => {
     expect(reordered.displayOrder).toBe(second.displayOrder);
     expect(list.map((s) => s.stop.id)).toEqual(['S2', 'S1']);
   });
+
+  it('flags a configured stop whose stop vanished from the feed as missing', () => {
+    const backend = setup();
+    const added = backend.config.addConfigStop({ stopId: 'S1', lineFilter: ['736'] });
+    // simulate a refreshed feed that no longer contains stop S1
+    backend.sqlite.pragma('foreign_keys = OFF');
+    backend.sqlite.prepare('DELETE FROM stops WHERE id = ?').run('S1');
+
+    const list = backend.config.listConfig();
+    expect(list).toHaveLength(1);
+    expect(list[0]?.missing).toBe(true);
+    expect(list[0]?.stop.id).toBe('S1');
+    expect(list[0]?.lineFilter).toEqual(['736']);
+    expect(list[0]?.id).toBe(added.id);
+
+    const single = backend.config.getConfigStop(added.id);
+    expect(single?.missing).toBe(true);
+  });
+
+  it('still updates and removes a missing configured stop', () => {
+    const backend = setup();
+    const added = backend.config.addConfigStop({ stopId: 'S1' });
+    backend.sqlite.pragma('foreign_keys = OFF');
+    backend.sqlite.prepare('DELETE FROM stops WHERE id = ?').run('S1');
+
+    const updated = backend.config.updateConfigStop(added.id, { enabled: false });
+    expect(updated.missing).toBe(true);
+    expect(updated.enabled).toBe(false);
+
+    backend.config.removeConfigStop(added.id);
+    expect(backend.config.listConfig()).toEqual([]);
+  });
 });

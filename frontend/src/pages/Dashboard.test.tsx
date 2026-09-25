@@ -128,4 +128,33 @@ describe('DashboardPage', () => {
 
     expect(await screen.findByText(/Refreshing the schedule/)).toBeInTheDocument();
   });
+
+  it('flags a configured stop that vanished from the schedule', async () => {
+    mockedGetConfig.mockResolvedValue({
+      stops: [
+        {
+          id: 1,
+          stop: { id: 'S1', name: 'Av. Teste', lat: 0, lon: 0 },
+          lineFilter: [],
+          displayOrder: 0,
+          enabled: true,
+          missing: true,
+        },
+      ],
+    });
+    mockedGetStatus.mockResolvedValue({
+      lastRefresh: '2026-09-25T08:00:00.000Z',
+      feedVersion: 'abc',
+      stale: false,
+      refreshing: false,
+    });
+
+    renderWithQuery(<DashboardPage />);
+
+    expect(
+      await screen.findByText('This stop no longer exists in the schedule — remove it in Config.'),
+    ).toBeInTheDocument();
+    // the missing card must not fetch times
+    expect(mockedGetStopTimes).not.toHaveBeenCalled();
+  });
 });

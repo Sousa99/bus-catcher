@@ -131,6 +131,13 @@ application contract (spec FR-010, SC-005; constitution principle III).
   TanStack `refetchInterval` (push/SSE optional later). Freshness covers both
   worlds: scheduled `last_refresh` and the realtime feed's own timestamp,
   with stale-data flagging per constitution II.
+- **Ingest execution**: the heavy parse + atomic SQLite ingest runs on a
+  **worker thread** (`services/refresh-worker.ts`) with a dedicated
+  `createIngestSqlite` connection (WAL, `synchronous=OFF`,
+  `wal_autocheckpoint=0`, one final `wal_checkpoint(TRUNCATE)`), so the
+  REST/MCP server stays responsive during a refresh. The download runs on the
+  main thread and the buffer is posted to the worker. (This supersedes an
+  earlier chunked-yield design that proved slow due to WAL checkpointing.)
 - **Deferred to a separate feature** (e.g. `002-live-eta`); Phase 2 only must
   keep the `ScheduleProvider` interface honest.
 

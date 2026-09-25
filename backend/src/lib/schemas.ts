@@ -35,6 +35,7 @@ export const configStopSchema = z.object({
   lineFilter: z.array(z.string()),
   displayOrder: z.number(),
   enabled: z.boolean(),
+  missing: z.boolean().optional(),
 });
 export type ConfigStop = z.infer<typeof configStopSchema>;
 

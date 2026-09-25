@@ -42,11 +42,12 @@ export function useAddStop() {
   });
 }
 
-export function useStopTimes(stopId: string, limit = 5, lines?: string[]) {
+export function useStopTimes(stopId: string, limit = 5, lines?: string[], enabled = true) {
   return useQuery({
     queryKey: ['stop-times', stopId, limit, lines?.join(',') ?? ''],
     queryFn: () => api.getStopTimes(stopId, limit, lines),
-    refetchInterval: 60_000,
+    enabled,
+    refetchInterval: enabled ? 60_000 : false,
   });
 }
 

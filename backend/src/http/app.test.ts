@@ -243,4 +243,25 @@ describe('US1 REST contract', () => {
     const { app } = setup();
     expect((await app.request('/api/config/stops/999', { method: 'DELETE' })).status).toBe(404);
   });
+
+  it('GET /api/config flags a stop that vanished from the feed', async () => {
+    const { app, backend } = setup();
+    await app.request('/api/config/stops', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ stopId: 'S1' }),
+    });
+    // simulate a refreshed feed that dropped stop S1 (ingest runs with FK off)
+    backend.sqlite.pragma('foreign_keys = OFF');
+    backend.sqlite.prepare('DELETE FROM stops WHERE id = ?').run('S1');
+
+    const res = await app.request('/api/config');
+    expect(res.status).toBe(200);
+    const body = await json<{
+      stops: Array<{ id: number; missing?: boolean; stop: { id: string } }>;
+    }>(res);
+    expect(body.stops).toHaveLength(1);
+    expect(body.stops[0]!.missing).toBe(true);
+    expect(body.stops[0]!.stop.id).toBe('S1');
+  });
 });

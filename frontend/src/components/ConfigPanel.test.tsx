@@ -28,6 +28,7 @@ const mockedGetConfig = vi.mocked(api.getConfig);
 const mockedAdd = vi.mocked(api.addConfigStop);
 const mockedUpdate = vi.mocked(api.updateConfigStop);
 const mockedRemove = vi.mocked(api.removeConfigStop);
+const mockedListLines = vi.mocked(api.listLines);
 
 function renderWithQuery(ui: ReactElement) {
   const queryClient = new QueryClient({
@@ -43,6 +44,10 @@ beforeEach(() => {
   mockedAdd.mockReset();
   mockedUpdate.mockReset();
   mockedRemove.mockReset();
+  mockedListLines.mockReset();
+  mockedListLines.mockResolvedValue({
+    lines: [{ id: 'L1', shortName: '736', longName: 'Cais do Sodré' }],
+  });
 });
 
 describe('ConfigPanel', () => {
@@ -205,5 +210,42 @@ describe('ConfigPanel', () => {
         [2, { displayOrder: 0 }],
       ]);
     });
+  });
+
+  it('flags a configured stop that no longer exists', async () => {
+    mockedGetConfig.mockResolvedValue({
+      stops: [
+        {
+          id: 1,
+          stop: { id: 'S1', name: 'Av. Teste', lat: 0, lon: 0 },
+          lineFilter: [],
+          displayOrder: 0,
+          enabled: true,
+          missing: true,
+        },
+      ],
+    });
+
+    renderWithQuery(<ConfigPanel />);
+
+    expect(await screen.findByText('no longer found')).toBeInTheDocument();
+  });
+
+  it('flags a line filter that no longer exists', async () => {
+    mockedGetConfig.mockResolvedValue({
+      stops: [
+        {
+          id: 1,
+          stop: { id: 'S1', name: 'Av. Teste', lat: 0, lon: 0 },
+          lineFilter: ['999'],
+          displayOrder: 0,
+          enabled: true,
+        },
+      ],
+    });
+
+    renderWithQuery(<ConfigPanel />);
+
+    expect(await screen.findByText('lines 999 no longer exist')).toBeInTheDocument();
   });
 });
