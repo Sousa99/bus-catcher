@@ -7,9 +7,11 @@ and alternatives considered.
 
 ## 1. Transit data source
 
-- **Decision**: Carris city-bus **static GTFS** feed from
-  `https://gateway.carris.pt/gateway/gtfs/api/v2.11/GTFS` (zip, ~47 MB),
-  ingested into the module's local SQLite database.
+- **Decision**: **Carris Metropolitana** static **GTFS** feed from
+  `https://api.carrismetropolitana.pt/gtfs` (zip; redirects to `/v2/gtfs`),
+  ingested into the module's local SQLite database. (An earlier city-Carris
+  feed at `gateway.carris.pt` was replaced — the module targets the
+  metropolitan network.)
 - **Rationale**: Free, keyless, CORS-open (verified live, HTTP 200), and an
   actively maintained feed (current service span through 2026-12-31). The
   spec asks for **scheduled passing times**; the static GTFS delivers exactly
@@ -18,8 +20,9 @@ and alternatives considered.
 - **Alternatives considered**:
   - **Google (Maps Platform)**: exposes Lisbon bus times but requires a paid
     API key and has restrictive transit-terms; rejected for v1.
-  - **Carris realtime (GPS/ETA)**: gated since 2022 ("public, not free");
-    powers Google Maps/CARRISway internally; not viable.
+  - **Carris Metropolitana realtime (ETA)**: gated? no — CM publishes an open
+    realtime feed; exact endpoints to be confirmed for the future `002-live-eta`
+    feature.
   - **GO/TML open-data hub** (`go.tmlmobilidade.pt`): unified GTFS for all
     operators and experimental GTFS-RT ETA. Kept as the **future realtime
     provider** and a backup schedule source, but its ETA is flagged

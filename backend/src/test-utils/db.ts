@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import * as schema from '../db/schema';
-import { createCarrisProvider } from '../providers/carris';
+import { createCarrisMetropolitanaProvider } from '../providers/carris-metropolitana';
 import type { ScheduleProvider } from '../providers/types';
 import { createConfigService, type ConfigService } from '../services/config';
 
@@ -36,7 +36,7 @@ export function createTestBackend(): TestBackend {
   return {
     sqlite,
     db,
-    provider: createCarrisProvider(db),
+    provider: createCarrisMetropolitanaProvider(db),
     config: createConfigService(db),
   };
 }

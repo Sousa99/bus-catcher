@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { zipSync, strToU8 } from 'fflate';
 import { createTestDbAt, type TestDb } from '../test-utils/db';
-import { createCarrisProvider } from '../providers/carris';
-import { getMetadata } from '../providers/carris/queries';
+import { createCarrisMetropolitanaProvider } from '../providers/carris-metropolitana';
+import { getMetadata } from '../providers/carris-metropolitana/queries';
 import { createConfigService } from './config';
 import { createRefreshService } from './refresh';
 import { createScheduleService } from './schedule';
@@ -43,7 +43,7 @@ function fixtureZip(): Uint8Array {
 }
 
 function setup(dbPath: string) {
-  const provider = createCarrisProvider(openDb(dbPath).db);
+  const provider = createCarrisMetropolitanaProvider(openDb(dbPath).db);
   const download = vi.fn().mockResolvedValue(fixtureZip());
   const refresh = createRefreshService({
     dbPath,

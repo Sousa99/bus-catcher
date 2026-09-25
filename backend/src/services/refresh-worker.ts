@@ -1,8 +1,8 @@
 import { parentPort } from 'node:worker_threads';
 import { createIngestSqlite } from '../db/client';
 import { migrateDb } from '../db/migrate';
-import { parseGtfsZipBuffer } from '../providers/carris/gtfs';
-import { ingestParsedGtfs } from '../providers/carris/ingest';
+import { unzipGtfs } from '../providers/carris-metropolitana/gtfs';
+import { ingestGtfsZip } from '../providers/carris-metropolitana/ingest';
 
 interface RefreshWorkerMessage {
   dbPath: string;
@@ -13,12 +13,12 @@ interface RefreshWorkerMessage {
 parentPort?.on('message', async (message: RefreshWorkerMessage) => {
   const { dbPath, buffer, feedVersion } = message;
   try {
-    const parsed = parseGtfsZipBuffer(buffer);
+    const zip = unzipGtfs(buffer);
     migrateDb(dbPath);
     const sqlite = createIngestSqlite(dbPath);
     try {
-      await ingestParsedGtfs(sqlite, {
-        parsed,
+      await ingestGtfsZip(sqlite, {
+        zip,
         feedVersion,
         fetchedAt: new Date().toISOString(),
       });

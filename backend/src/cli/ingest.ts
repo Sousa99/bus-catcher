@@ -3,8 +3,8 @@ import { config } from '../config';
 import { createIngestSqlite } from '../db/client';
 import { migrateDb } from '../db/migrate';
 import { logger } from '../lib/logger';
-import { decodeGtfsZip, downloadGtfs, parseGtfsFiles, unzipGtfs } from '../providers/carris/gtfs';
-import { ingestParsedGtfs } from '../providers/carris/ingest';
+import { downloadGtfs, unzipGtfs } from '../providers/carris-metropolitana/gtfs';
+import { ingestGtfsZip } from '../providers/carris-metropolitana/ingest';
 
 async function main(): Promise<void> {
   logger.info('downloading GTFS feed', { url: config.feedUrl });
@@ -12,20 +12,13 @@ async function main(): Promise<void> {
   const feedVersion = createHash('sha256').update(buffer).digest('hex').slice(0, 12);
   logger.info('feed downloaded', { bytes: buffer.byteLength, feedVersion });
 
-  const files = decodeGtfsZip(unzipGtfs(buffer));
-  const parsed = parseGtfsFiles(files);
-  if (parsed.warnings.length > 0) {
-    logger.warn('gtfs parse warnings', {
-      count: parsed.warnings.length,
-      first: parsed.warnings.slice(0, 5),
-    });
-  }
+  const zip = unzipGtfs(buffer);
 
   migrateDb();
   const sqlite = createIngestSqlite();
   try {
-    await ingestParsedGtfs(sqlite, {
-      parsed,
+    await ingestGtfsZip(sqlite, {
+      zip,
       feedVersion,
       fetchedAt: new Date().toISOString(),
     });

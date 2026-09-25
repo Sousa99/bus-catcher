@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { Worker } from 'node:worker_threads';
 import { config } from '../config';
 import { logger } from '../lib/logger';
-import { downloadGtfs } from '../providers/carris/gtfs';
+import { downloadGtfs } from '../providers/carris-metropolitana/gtfs';
 
 export type RefreshStatus = 'started' | 'in_progress';
 

@@ -9,8 +9,8 @@ run guide only.
 ## Prerequisites
 
 - Node 24, pnpm 11 (`pnpm install` at repo root).
-- Internet access to `https://gateway.carris.pt/gateway/gtfs/api/v2.11/GTFS`
-  on first ingest.
+- Internet access to `https://api.carrismetropolitana.pt/gtfs` on first
+  ingest (Carris Metropolitana network).
 
 ## 1. Ingest the schedule
 

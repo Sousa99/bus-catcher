@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createTestBackend, seedTestFeed } from '../test-utils/db';
 import { createScheduleService } from './schedule';
 import { AppError } from '../lib/errors';
-import { setMetadata } from '../providers/carris/queries';
+import { setMetadata } from '../providers/carris-metropolitana/queries';
 
 function setup() {
   const backend = createTestBackend();

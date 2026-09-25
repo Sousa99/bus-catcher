@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { unzipSync, strFromU8 } from 'fflate';
+import { unzipSync } from 'fflate';
 
 export interface GtfsLine {
   id: string;
@@ -121,6 +121,31 @@ function parseGtfsTime(value: string | undefined): number | null {
   return Number(match[1]) * 60 + Number(match[2]);
 }
 
+/** Yields non-empty, decoded lines from a UTF-8 buffer without building one big string. */
+function* csvLinesFromBytes(bytes: Uint8Array): Generator<string> {
+  const decoder = new TextDecoder();
+  let lineStart = 0;
+  for (let i = 0; i <= bytes.length; i++) {
+    if (i === bytes.length || bytes[i] === 10) {
+      let end = i;
+      if (end > lineStart && bytes[end - 1] === 13) end--;
+      const line = decoder.decode(bytes.subarray(lineStart, end));
+      if (line.trim() !== '') yield line;
+      lineStart = i + 1;
+    }
+  }
+}
+
+/** Build a header-indexed row object from a CSV line and header. */
+function rowFromCsvLine(line: string, header: string[]): Record<string, string> {
+  const cells = splitCsvLine(line);
+  const row: Record<string, string> = {};
+  for (let c = 0; c < header.length; c++) {
+    row[header[c]!] = (cells[c] ?? '').trim();
+  }
+  return row;
+}
+
 function parseTable<T>(
   content: string | undefined,
   fileName: string,
@@ -200,19 +225,29 @@ export function unzipGtfs(buffer: Uint8Array): Record<string, Uint8Array> {
   return unzipSync(buffer);
 }
 
-export function decodeGtfsZip(zip: Record<string, Uint8Array>): Record<string, string> {
-  const files: Record<string, string> = {};
-  for (const [name, bytes] of Object.entries(zip)) {
-    files[name] = strFromU8(bytes);
-  }
-  return files;
+function parseStopTimeRow(row: Record<string, string>): GtfsStopTime | null {
+  const parsed = stopTimeSchema.safeParse(row);
+  if (!parsed.success) return null;
+  const r = parsed.data;
+  const arrivalMin = parseGtfsTime(r.arrival_time);
+  if (arrivalMin === null) return null;
+  const departureMin = parseGtfsTime(r.departure_time);
+  return {
+    tripId: r.trip_id,
+    stopSequence: r.stop_sequence,
+    stopId: r.stop_id,
+    arrivalMin,
+    departureMin,
+    pickupType: r.pickup_type ?? null,
+    dropOffType: r.drop_off_type ?? null,
+  };
 }
 
-export function parseGtfsZipBuffer(buffer: Uint8Array): ParsedGtfs {
-  return parseGtfsFiles(decodeGtfsZip(unzipGtfs(buffer)));
-}
-
-export function parseGtfsFiles(files: Record<string, string>): ParsedGtfs {
+/**
+ * Parses the non-stop_times tables from decoded files. Used for small tables
+ * whose files fit comfortably in memory.
+ */
+export function parseGtfsMeta(files: Record<string, string>): Omit<ParsedGtfs, 'stopTimes'> {
   const warnings: string[] = [];
 
   const lines = parseTable(
@@ -268,29 +303,6 @@ export function parseGtfsFiles(files: Record<string, string>): ParsedGtfs {
     warnings,
   );
 
-  const stopTimes = parseTable(
-    files['stop_times.txt'],
-    'stop_times.txt',
-    (row) => {
-      const parsed = stopTimeSchema.safeParse(row);
-      if (!parsed.success) return null;
-      const r = parsed.data;
-      const arrivalMin = parseGtfsTime(r.arrival_time);
-      if (arrivalMin === null) return null;
-      const departureMin = parseGtfsTime(r.departure_time);
-      return {
-        tripId: r.trip_id,
-        stopSequence: r.stop_sequence,
-        stopId: r.stop_id,
-        arrivalMin,
-        departureMin,
-        pickupType: r.pickup_type ?? null,
-        dropOffType: r.drop_off_type ?? null,
-      };
-    },
-    warnings,
-  );
-
   const calendar = parseTable(
     files['calendar.txt'],
     'calendar.txt',
@@ -331,7 +343,43 @@ export function parseGtfsFiles(files: Record<string, string>): ParsedGtfs {
     warnings,
   );
 
-  return { lines, stops, trips, stopTimes, calendar, calendarDates, warnings };
+  return { lines, stops, trips, calendar, calendarDates, warnings };
+}
+
+export function parseGtfsFiles(files: Record<string, string>): ParsedGtfs {
+  const meta = parseGtfsMeta(files);
+  const stopTimes = parseTable(
+    files['stop_times.txt'],
+    'stop_times.txt',
+    parseStopTimeRow,
+    meta.warnings,
+  );
+  return { ...meta, stopTimes };
+}
+
+/**
+ * Streams stop_times rows from a raw UTF-8 buffer, skipping the header and
+ * malformed rows. Avoids materializing the whole file as a JS string or array
+ * (Carris Metropolitana's stop_times.txt exceeds the V8 string length limit).
+ */
+export function* streamStopTimes(bytes: Uint8Array, warnings: string[]): Generator<GtfsStopTime> {
+  let first = true;
+  let header: string[] = [];
+  let lineIndex = 0;
+  for (const line of csvLinesFromBytes(bytes)) {
+    if (first) {
+      first = false;
+      header = splitCsvLine(line).map((h) => h.trim());
+      continue;
+    }
+    lineIndex++;
+    const parsed = parseStopTimeRow(rowFromCsvLine(line, header));
+    if (parsed === null) {
+      warnings.push(`stop_times.txt row ${lineIndex + 1} skipped (invalid record)`);
+    } else {
+      yield parsed;
+    }
+  }
 }
 
 export async function downloadGtfs(url: string): Promise<Uint8Array> {
