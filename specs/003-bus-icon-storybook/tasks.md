@@ -162,11 +162,11 @@ functional.
 
 **Purpose**: Validation and quality gates across all user stories.
 
-- [ ] T008 [P] Run the `quickstart.md` validation end-to-end: `pnpm
+- [x] T008 [P] Run the `quickstart.md` validation end-to-end: `pnpm
       --filter ./frontend storybook` (Docs page renders), `pnpm --filter
       ./frontend build-storybook` (Docs included, no errors), and the SPA
       favicon check via `pnpm --filter ./frontend dev`.
-- [ ] T009 [P] Run all quality gates and confirm no regressions:
+- [x] T009 [P] Run all quality gates and confirm no regressions:
       `pnpm lint && pnpm format && pnpm test && pnpm typecheck`, `node
       scripts/scaffold.mjs --check`, and `pnpm --filter ./frontend build` to
       prove the SPA runtime bundle is unaffected by Storybook (storybook is
