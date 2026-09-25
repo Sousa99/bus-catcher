@@ -85,7 +85,7 @@ component the SPA uses (`frontend/src/components/StopTimesList.tsx`).
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] Create `frontend/src/components/StopTimesList.stories.tsx` —
+- [x] T004 [US1] Create `frontend/src/components/StopTimesList.stories.tsx` —
       CSF with a typed meta (`satisfies Meta<typeof StopTimesList>`),
       `tags: ['autodocs']`, and three `StoryObj` stories with typed `args`
       mirroring the fixtures in
