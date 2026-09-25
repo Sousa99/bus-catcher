@@ -145,7 +145,7 @@ and **Empty** (FR-003, FR-004, FR-005, SC-003).
 
 ### Implementation for User Story 3
 
-- [ ] T007 [US3] Create `frontend/src/components/StopTimesList.mdx` — import
+- [x] T007 [US3] Create `frontend/src/components/StopTimesList.mdx` — import
       `{ Canvas, Meta }` from `@storybook/addon-docs/blocks` (the only valid
       v9 path — research R3); `<Meta of={Stories} />` bound to the CSF module
       exports from `./StopTimesList.stories`; prose sections for purpose,
