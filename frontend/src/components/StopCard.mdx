@@ -19,23 +19,26 @@ here matches the app.
 
 ## Props
 
-| Prop                | Type             | Required | Description                                                               |
-| ------------------- | ---------------- | -------- | ------------------------------------------------------------------------- |
-| `stopId`            | `string`         | yes      | Stop identifier whose waiting times to display.                           |
-| `stopName`          | `string`         | yes      | Stop display name shown in the card header.                               |
-| `lines`             | `string[]`       | no       | Set of buses (line short names) to show; empty means all lines.           |
-| `limit`             | `number`         | no       | Max number of buses to list. Defaults to 5.                               |
-| `refetchIntervalMs` | `number`         | no       | Poll interval in ms. Defaults to 15000; `0` disables polling.             |
-| `fetchTimes`        | `FetchStopTimes` | no       | Custom fetcher override; defaults to the built-in API client.             |
-| `missing`           | `boolean`        | no       | Stop no longer exists in the schedule; shows a notice and skips fetching. |
+The widget is driven by primitive props, rendered below by Storybook from the
+component's types (name, type, and description):
+
+- **`stopId`** (required) — the stop whose waiting times to display.
+- **`stopName`** (required) — the stop display name shown in the card header.
+- **`lines`** — the set of buses (line short names) to show; empty means all
+  lines.
+- **`limit`** — max number of buses to list (default `5`).
+- **`refetchIntervalMs`** — poll interval in ms (default `15000`; `0`
+  disables polling).
+- **`fetchTimes`** — custom fetcher override; defaults to the built-in API
+  client.
+- **`missing`** — the stop no longer exists in the schedule; shows a notice
+  and skips fetching.
+
+<Controls of={StopCardStories.Default} />
 
 The widget fetches `StopTimesResponse` (the list of `Passing` rows plus
 `RealtimeInfo`) for the given stop and bus set. When `fetchTimes` is omitted
 it uses the built-in API client (`GET /api/stops/:id/times`).
-
-## Controls
-
-<Controls of={StopCardStories.Default} />
 
 ## States
 
