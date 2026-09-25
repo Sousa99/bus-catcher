@@ -32,7 +32,7 @@ manual favicon checks in `quickstart.md`. No new test tasks are generated.
 
 **Purpose**: Confirm the Storybook toolchain is ready (no new dependencies).
 
-- [ ] T001 Verify the Storybook toolchain is present in
+- [x] T001 Verify the Storybook toolchain is present in
       `frontend/package.json` — `storybook`, `@storybook/react-vite`,
       `@storybook/addon-docs` in devDependencies and the `storybook` /
       `build-storybook` scripts exist; confirm `pnpm install` is current.
@@ -48,7 +48,7 @@ manual favicon checks in `quickstart.md`. No new test tasks are generated.
 **⚠️ CRITICAL**: No user story work involving Storybook can begin until this
 phase is complete.
 
-- [ ] T002 [P] Create `frontend/.storybook/main.ts` — `framework:
+- [x] T002 [P] Create `frontend/.storybook/main.ts` — `framework:
       '@storybook/react-vite'`, `addons: ['@storybook/addon-docs']`, stories
       globs `'../src/**/*.mdx'` and
       `'../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'`, and a `viteFinal` hook
@@ -56,7 +56,7 @@ phase is complete.
       `await import('@tailwindcss/vite')` (top-level import fails with
       `ERR_PACKAGE_PATH_NOT_EXPORTED` — research R2). `satisfies
       StorybookConfig` from `@storybook/react-vite`.
-- [ ] T003 [P] Create `frontend/.storybook/preview.ts` — `import
+- [x] T003 [P] Create `frontend/.storybook/preview.ts` — `import
       '../src/index.css';` (required for Tailwind v4 utility generation) and
       export a `Preview` with `tags: ['autodocs']` (research R2/R4).
 
