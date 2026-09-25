@@ -115,14 +115,14 @@ tab small and toggle OS dark mode — the icon stays legible (FR-007).
 
 ### Implementation for User Story 2
 
-- [ ] T005 [P] [US2] Create `frontend/public/favicon.svg` — Lucide
+- [x] T005 [P] [US2] Create `frontend/public/favicon.svg` — Lucide
       `bus-front` icon (ISC; path data from
       `raw.githubusercontent.com/lucide-icons/lucide/main/icons/bus-front.svg`),
       self-contained (~1KB), 24×24 `viewBox`, explicit stroke colors
       replacing `currentColor` (light-theme color chosen to also read on
       dark, since Safari ignores media queries in SVG favicons — research
       R6), no scripts/animation/external resources.
-- [ ] T006 [US2] Add the favicon link to `frontend/index.html`:
+- [x] T006 [US2] Add the favicon link to `frontend/index.html`:
       `<link rel="icon" type="image/svg+xml" href="/favicon.svg" />` in the
       `<head>` (contract `contracts/stop-times-list.md`, research R5).
       Depends on T005.
